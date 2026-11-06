@@ -23,9 +23,16 @@ import { CITY_DEFAULT_VALUES, CityFormValues, CitySchema } from './city'
 
 interface Props {
   cityId?: string
+  // si vienen, el formulario está dentro de un modal
+  onSuccess?: VoidFunction
+  onCancel?: VoidFunction
 }
 
-export default function CityNewEditForm({ cityId }: Props) {
+export default function CityNewEditForm({
+  cityId,
+  onSuccess,
+  onCancel
+}: Props) {
   const router = useRouter()
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(!!cityId)
@@ -67,14 +74,15 @@ export default function CityNewEditForm({ cityId }: Props) {
         reset({ name: city.name, regionId: city.region.id })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        router.push(paths.city.list)
+        if (onCancel) onCancel()
+        else router.push(paths.city.list)
       } finally {
         setLoading(false)
       }
     }
 
     getCity()
-  }, [cityId, reset, enqueueSnackbar, router])
+  }, [cityId, reset, enqueueSnackbar, router, onCancel])
 
   const onSubmit = handleSubmit(async (data) => {
     // el back espera la región como objeto
@@ -91,7 +99,8 @@ export default function CityNewEditForm({ cityId }: Props) {
         await saveCity(city)
         enqueueSnackbar('Ciudad creada')
       }
-      router.push(paths.city.list)
+      if (onSuccess) onSuccess()
+      else router.push(paths.city.list)
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -139,14 +148,20 @@ export default function CityNewEditForm({ cityId }: Props) {
           />
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              component={RouterLink}
-              href={paths.city.list}
-              variant="outlined"
-              color="inherit"
-            >
-              Cancelar
-            </Button>
+            {onCancel ? (
+              <Button variant="outlined" color="inherit" onClick={onCancel}>
+                Cancelar
+              </Button>
+            ) : (
+              <Button
+                component={RouterLink}
+                href={paths.city.list}
+                variant="outlined"
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+            )}
             <Button type="submit" variant="contained" loading={isSubmitting}>
               {cityId ? 'Guardar cambios' : 'Crear ciudad'}
             </Button>

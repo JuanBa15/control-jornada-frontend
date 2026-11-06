@@ -30,9 +30,16 @@ import {
 
 interface Props {
   companyId?: string
+  // si vienen, el formulario está dentro de un modal
+  onSuccess?: VoidFunction
+  onCancel?: VoidFunction
 }
 
-export default function CompanyNewEditForm({ companyId }: Props) {
+export default function CompanyNewEditForm({
+  companyId,
+  onSuccess,
+  onCancel
+}: Props) {
   const router = useRouter()
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(!!companyId)
@@ -86,14 +93,15 @@ export default function CompanyNewEditForm({ companyId }: Props) {
         })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        router.push(paths.company.list)
+        if (onCancel) onCancel()
+        else router.push(paths.company.list)
       } finally {
         setLoading(false)
       }
     }
 
     getCompany()
-  }, [companyId, reset, enqueueSnackbar, router])
+  }, [companyId, reset, enqueueSnackbar, router, onCancel])
 
   const onSubmit = handleSubmit(async (data) => {
     // el back espera la comuna como objeto
@@ -108,7 +116,8 @@ export default function CompanyNewEditForm({ companyId }: Props) {
         await saveCompany(company)
         enqueueSnackbar('Empresa creada')
       }
-      router.push(paths.company.list)
+      if (onSuccess) onSuccess()
+      else router.push(paths.company.list)
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -168,14 +177,20 @@ export default function CompanyNewEditForm({ companyId }: Props) {
           </Stack>
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              component={RouterLink}
-              href={paths.company.list}
-              variant="outlined"
-              color="inherit"
-            >
-              Cancelar
-            </Button>
+            {onCancel ? (
+              <Button variant="outlined" color="inherit" onClick={onCancel}>
+                Cancelar
+              </Button>
+            ) : (
+              <Button
+                component={RouterLink}
+                href={paths.company.list}
+                variant="outlined"
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+            )}
             <Button type="submit" variant="contained" loading={isSubmitting}>
               {companyId ? 'Guardar cambios' : 'Crear empresa'}
             </Button>
