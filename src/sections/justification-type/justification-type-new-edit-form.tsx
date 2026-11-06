@@ -9,9 +9,6 @@ import { useForm } from 'react-hook-form'
 import FormProvider, { RHFTextField } from '@/components/hook-form'
 import { useSnackbar } from '@/components/snackbar'
 import { getErrorMessage } from '@/helpers/API'
-import { RouterLink } from '@/routes/components'
-import { useRouter } from '@/routes/hooks'
-import { paths } from '@/routes/paths'
 import {
   createJustificationType,
   justificationTypeById,
@@ -24,13 +21,15 @@ import {
   JustificationTypeSchema
 } from './justificationType'
 import { JustificationTypeModel } from '@/model'
+import Typography from '@mui/material/Typography'
 
 interface Props {
   justTypeId?: string
+  onClose: () => void
+  onSuccess: () => void
 }
 
-export default function JustificationTypeNewEditForm({ justTypeId }: Props) {
-  const router = useRouter()
+export default function JustificationTypeNewEditForm({ justTypeId, onClose, onSuccess }: Props) {
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(!!justTypeId)
 
@@ -56,14 +55,13 @@ export default function JustificationTypeNewEditForm({ justTypeId }: Props) {
         })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        router.push(paths.justificationType.list)
       } finally {
         setLoading(false)
       }
     }
 
     getJustificationType()
-  }, [justTypeId, reset, enqueueSnackbar, router])
+  }, [justTypeId, reset, enqueueSnackbar])
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -78,7 +76,9 @@ export default function JustificationTypeNewEditForm({ justTypeId }: Props) {
         await createJustificationType(data)
         enqueueSnackbar('Tipo creado')
       }
-      router.push(paths.justificationType.list)
+
+      onSuccess()
+      onClose()
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -95,13 +95,16 @@ export default function JustificationTypeNewEditForm({ justTypeId }: Props) {
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
       <Card sx={{ p: 3 }}>
+        <Typography variant='h5' fontWeight={600} sx={{ pb: 3 }}>
+          { justTypeId ? "Editar tipo" : "Crear tipo" }
+        </Typography>
+
         <Stack spacing={3}>
           <RHFTextField name="name" label="Nombre" required />
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button
-              component={RouterLink}
-              href={paths.justificationType.list}
+              onClick={onClose}
               variant="outlined"
               color="inherit"
             >

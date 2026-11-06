@@ -4,13 +4,13 @@ import { TableHeadItem } from '@/components/table'
 
 export const TABLE_HEAD: TableHeadItem[] = [
   { id: 'employeeId', label: 'Empleado' },
-  { id: 'day', label: 'Fecha', align: 'center' },
+  { id: 'day', label: 'Fecha', align: 'left' },
   { id: 'startOfTheDay', label: 'Inicio de jornada', align: 'center' },
   { id: 'entry', label: 'Entrada', align: 'center' },
   { id: 'exit', label: 'Salida', align: 'center' },
   { id: 'breakTime', label: 'Inicio del descanso', align: 'center' },
   { id: 'backToWork', label: 'Fin del descanso', align: 'center' },
-  { id: 'justificationId', label: 'Justificación', align: 'center' },
+  { id: 'justificationId', label: 'Justificación'},
   { id: 'actions', label: 'Acciones', align: 'right' }
 ]
 

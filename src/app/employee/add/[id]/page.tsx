@@ -1,8 +1,9 @@
-import { CommuneEditView } from '@/sections/commune/view'
+import { EmployeeEditView } from '@/sections/employee/view'
 
 export const metadata = {
-  title: 'Editar comuna'
+  title: 'Editar empleado'
 }
+
 interface Props {
   params: Promise<{ id: string }>
 }
@@ -10,5 +11,5 @@ interface Props {
 export default async function Page({ params }: Props) {
   const { id } = await params
 
-  return <CommuneEditView id={id} />
+  return <EmployeeEditView id={id} />
 }

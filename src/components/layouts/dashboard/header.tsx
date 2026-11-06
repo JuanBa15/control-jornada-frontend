@@ -10,9 +10,12 @@ import { HEADER, NAV } from '../config-layout'
 
 interface Props {
   onOpenNav: VoidFunction
+  collapsed: boolean
 }
 
-export default function Header({ onOpenNav }: Props) {
+export default function Header({ onOpenNav, collapsed }: Props) {
+  const navWidth = collapsed ? NAV.W_MINI : NAV.W_VERTICAL
+
   return (
     <AppBar
       position="fixed"
@@ -20,11 +23,13 @@ export default function Header({ onOpenNav }: Props) {
       elevation={0}
       sx={{
         height: { xs: HEADER.H_MOBILE, lg: HEADER.H_DESKTOP },
-        width: { lg: `calc(100% - ${NAV.W_VERTICAL}px)` },
-        ml: { lg: `${NAV.W_VERTICAL}px` },
+        width: { lg: `calc(100% - ${navWidth}px)` },
+        ml: { lg: `${navWidth}px` },
         borderBottom: 1,
         borderColor: 'divider',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        transition: (theme) =>
+          theme.transitions.create(['width', 'margin-left'])
       }}
     >
       <Toolbar>

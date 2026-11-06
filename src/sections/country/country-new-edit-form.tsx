@@ -20,9 +20,11 @@ import { CountryModel } from '@/model'
 
 interface Props {
   countryId?: string
+  onSuccess?: (country: CountryModel) => void
+  onCancel?: () => void
 }
 
-export default function CountryNewEditForm({ countryId }: Props) {
+export default function CountryNewEditForm({ countryId, onSuccess, onCancel }: Props) {
   const router = useRouter()
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(!!countryId)
@@ -46,30 +48,39 @@ export default function CountryNewEditForm({ countryId }: Props) {
         const country = await countryById(countryId)
         reset({
           name: country.name,
-          nationality: country.nationality ?? ''
+          nationality: country.nationality
         })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        router.push(paths.country.list)
+        if (onCancel) {
+          onCancel()
+        } else {
+          router.push(paths.country.list)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     getCountry()
-  }, [countryId, reset, enqueueSnackbar, router])
+  }, [countryId, reset, enqueueSnackbar, router, onCancel])
 
   const onSubmit = handleSubmit(async (data) => {
     try {
+      let country: CountryModel
       if (countryId) {
         const c: CountryModel = {...data, id: Number(countryId)};
-        await updateCountry(countryId, c)
+        country = await updateCountry(countryId, c)
         enqueueSnackbar('País actualizada')
       } else {
-        await saveCountry(data)
+        country = await saveCountry(data)
         enqueueSnackbar('País creada')
       }
-      router.push(paths.country.list)
+      if (onSuccess) {
+        onSuccess(country)
+      } else {
+        router.push(paths.country.list)
+      }
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -85,26 +96,34 @@ export default function CountryNewEditForm({ countryId }: Props) {
 
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
-      <Card sx={{ p: 3 }}>
+      <Card sx={onCancel ? { pt: 1, boxShadow: 'none', overflow: 'visible' } : { p: 3 }}>
         <Stack spacing={3}>
-          <RHFTextField name="name" label="Nombre" required />
+          <RHFTextField 
+            name="name" 
+            label="Nombre" 
+            required 
+          />
           <RHFTextField
             name="nationality"
             label="Nacionalidad"
-            multiline
-            rows={3}
+            required
           />
-          {/* <RHFSwitch name="completed" label="Completada" /> */}
-
+          
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              component={RouterLink}
-              href={paths.country.list}
-              variant="outlined"
-              color="inherit"
-            >
-              Cancelar
-            </Button>
+            {onCancel ? (
+              <Button variant="outlined" color="inherit" onClick={onCancel}>
+                Cancelar
+              </Button>
+            ) : (
+              <Button
+                component={RouterLink}
+                href={paths.country.list}
+                variant="outlined"
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+            )}
             <Button type="submit" variant="contained" loading={isSubmitting}>
               {countryId ? 'Guardar cambios' : 'Crear país'}
             </Button>

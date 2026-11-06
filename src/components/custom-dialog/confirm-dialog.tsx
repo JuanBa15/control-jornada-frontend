@@ -12,22 +12,36 @@ export default function ConfirmDialog({
   content,
   action,
   onClose,
-  cancelLabel = 'Cancelar'
+  cancelLabel = 'Cancelar',
+  hideCancel = false,
+  onExited
 }: ConfirmDialogProps) {
   return (
-    <Dialog fullWidth maxWidth="xs" open={open} onClose={onClose}>
-      <DialogTitle sx={{ pb: 2 }}>{title}</DialogTitle>
+    <Dialog
+      fullWidth
+      maxWidth="xs"
+      open={open}
+      onClose={onClose}
+      slotProps={{ transition: { onExited } }}
+    >
+      {title && <DialogTitle sx={{ pb: 2 }}>{title}</DialogTitle>}
 
       {content && (
-        <DialogContent sx={{ typography: 'body2' }}>{content}</DialogContent>
+        <DialogContent sx={{ typography: 'body2', pt: title ? 0 : 3 }}>
+          {content}
+        </DialogContent>
       )}
 
-      <DialogActions>
-        {action}
-        <Button variant="outlined" color="inherit" onClick={onClose}>
-          {cancelLabel}
-        </Button>
-      </DialogActions>
+      {(action || !hideCancel) && (
+        <DialogActions>
+          {action}
+          {!hideCancel && (
+            <Button variant="outlined" color="inherit" onClick={onClose}>
+              {cancelLabel}
+            </Button>
+          )}
+        </DialogActions>
+      )}
     </Dialog>
   )
 }

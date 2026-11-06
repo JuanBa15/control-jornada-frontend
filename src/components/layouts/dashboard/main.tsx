@@ -4,9 +4,12 @@ import { HEADER, NAV } from '../config-layout'
 
 interface Props {
   children: React.ReactNode
+  collapsed: boolean
 }
 
-export default function Main({ children }: Props) {
+export default function Main({ children, collapsed }: Props) {
+  const navWidth = collapsed ? NAV.W_MINI : NAV.W_VERTICAL
+
   return (
     <Box
       component="main"
@@ -19,7 +22,7 @@ export default function Main({ children }: Props) {
         },
         pb: 6,
         px: { xs: 0, lg: 2 },
-        width: { lg: `calc(100% - ${NAV.W_VERTICAL}px)` }
+        width: { lg: `calc(100% - ${navWidth}px)` }
       }}
     >
       {children}

@@ -31,9 +31,9 @@ import type {
 } from '@/model/justification.model'
 
 import {
-  getJustificationTypes,
-  getJustificationById,
-  createJustification,
+  allJustificationTypes as getJustificationTypes,
+  justificationById as getJustificationById,
+  saveJustification as createJustification,
   updateJustification
 } from '@/services/rest/justification/justificationService'
 
@@ -80,6 +80,9 @@ export default function RegisterNewEditForm({ registerId }: Props) {
   } = methods
 
 
+  //Verificar si ek usuario activo el switch o no
+  const hasJustification = methods.watch('hasJustification')
+
   useEffect(() => {
     if (!registerId) return
 
@@ -97,7 +100,10 @@ export default function RegisterNewEditForm({ registerId }: Props) {
         if (justificationId !== null) {
         const justification = await getJustificationById(justificationId)
 
-        justificationTypeId = justification.justificationTypeId
+        justificationTypeId =
+          justification.justificationTypeId ??
+          justification.justificationType?.id ??
+          null
         justificationComments = justification.comments ?? ''
 
         setExistingAttachment(justification.attachment)
@@ -180,29 +186,48 @@ export default function RegisterNewEditForm({ registerId }: Props) {
     }
   })
 
+
+  //Modificación del useEffect para controlar el cargar los tipos de justificación
   useEffect(() => {
+  // No consultar si el Switch está desactivado
+  if (!hasJustification) return
+
+  // Evitar consultar nuevamente si ya tenemos los tipos cargados
+  if (justificationTypes.length > 0) return
+
+  let cancelled = false
+
   const loadTypes = async () => {
     try {
       const types = await getJustificationTypes()
-      setJustificationTypes(types)
+
+      if (!cancelled) {
+        setJustificationTypes(types)
+      }
     } catch (error) {
-      enqueueSnackbar(getErrorMessage(error), {
-        variant: 'error'
-      })
+      if (!cancelled) {
+        enqueueSnackbar(getErrorMessage(error), {
+          variant: 'error'
+        })
+      }
     }
   }
 
   void loadTypes()
-  }, [enqueueSnackbar])
 
-
-  if (loading) {
-    return (
-      <Stack alignItems="center" sx={{ py: 8 }}>
-        <CircularProgress />
-      </Stack>
-    )
+  return () => {
+    cancelled = true
   }
+}, [hasJustification, justificationTypes.length, enqueueSnackbar])
+
+
+if (loading) {
+  return (
+    <Stack alignItems="center" sx={{ py: 8 }}>
+      <CircularProgress />
+    </Stack>
+  )
+}
 
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
@@ -321,8 +346,15 @@ export default function RegisterNewEditForm({ registerId }: Props) {
                 <FormControlLabel
                 control={
                     <Switch
-                    checked={Boolean(field.value)}
-                    onChange={(_, checked) => field.onChange(checked)}
+                      checked={Boolean(field.value)}
+                      onChange={(_, checked) => {
+                        field.onChange(checked)
+
+                        if (!checked) {
+                          methods.setValue('justificationTypeId', null)
+                          methods.setValue('justificationComments', '')
+                        }
+                      }}
                     />
                 }
                 label="Agregar justificación"
@@ -330,7 +362,7 @@ export default function RegisterNewEditForm({ registerId }: Props) {
             )}
             />
 
-            {methods.watch('hasJustification') && (
+            {hasJustification && (
             <>
                 <Controller
                 name="justificationTypeId"

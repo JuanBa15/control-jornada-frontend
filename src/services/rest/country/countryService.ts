@@ -25,12 +25,12 @@ export const saveCountry = async (country: CountryRequest): Promise<CountryModel
 
 export const updateCountry = async (
   id: string | number,
-  //country: CountryRequest
-  country: CountryModel
+  country: CountryRequest
+  //country: CountryModel
 ): Promise<CountryModel> => {
-  //const response = await fetch(`${apiUrl}/${id}`, {
-  const response = await fetch(`${apiUrl}`, {
-    method: 'POST',
+  const response = await fetch(`${apiUrl}/${id}`, {
+  //const response = await fetch(`${apiUrl}`, {
+    method: 'PUT',
     headers: JSON_HEADERS,
     body: JSON.stringify(country)
   })

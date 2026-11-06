@@ -2,31 +2,18 @@
 
 import Container from '@mui/material/Container'
 
-import CustomBreadcrumbs from '@/components/custom-breadcrumbs'
-import { paths } from '@/routes/paths'
-
 import CommuneNewEditForm from '../commune-new-edit-form'
 
 interface Props {
   id: string
+  onSuccess: () => void
+  onClose: () => void
 }
 
-export default function CommuneEditView({ id }: Props) {
+export default function CommuneEditView({ id, onSuccess, onClose }: Props) {
   return (
-    <Container maxWidth="md">
-      <CustomBreadcrumbs
-        heading="Editar comuna"
-        links={[
-          {
-            name: 'Comunas',
-            href: paths.justificationType.root
-          },
-          { name: `Comuna #${id}` }
-        ]}
-        sx={{ mb: { xs: 3, md: 5 } }}
-      />
-
-      <CommuneNewEditForm communeId={id} />
+    <Container disableGutters>
+      <CommuneNewEditForm communeId={id} onSuccess={onSuccess} onClose={onClose}/>
     </Container>
   )
 }

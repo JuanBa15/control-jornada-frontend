@@ -45,6 +45,7 @@ export default function CompanyListView() {
     const getCompanies = async () => {
       try {
         const response = await allCompanies()
+        console.log(response);
         setCompanyList(response)
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })

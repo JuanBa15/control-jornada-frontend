@@ -4,6 +4,8 @@ import AddIcon from '@mui/icons-material/Add'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Container from '@mui/material/Container'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableContainer from '@mui/material/TableContainer'
@@ -15,26 +17,29 @@ import { useEffect, useState } from 'react'
 
 import CustomBreadcrumbs from '@/components/custom-breadcrumbs'
 import {
+    TableHeadCustom,
     TableLoading,
-    TableNoData
+    TableNoData,
+    TablePaginationCustom,
+    useTable
 } from '@/components/table'
 import { getErrorMessage } from '@/helpers/API'
 import { ContractTypeModel } from '@/model'
-import { RouterLink } from '@/routes/components'
-import { useRouter } from '@/routes/hooks'
 import { paths } from '@/routes/paths'
 import {
     allContractTypes,
     deleteContractType
 } from '@/services/rest'
 import { useSnackbar } from '@/components/snackbar'
+import { getComparator, includesText, Order } from '@/utils/table-filter'
 
 import ContractTypeTableRow from '../contract-type-table-row'
 import { TABLE_HEAD } from '../contract-type'
+import ContractTypeNewEditForm from '../contract-type-new-edit-form'
 
 export default function ContractTypeListView() {
-    const router = useRouter()
     const { enqueueSnackbar } = useSnackbar()
+    const table = useTable({ defaultOrderBy: 'id', defaultOrder: 'asc' })
 
     const [contractTypes, setContractTypes] = useState<
         ContractTypeModel[]
@@ -42,6 +47,8 @@ export default function ContractTypeListView() {
 
     const [loading, setLoading] = useState(true)
     const [searchText, setSearchText] = useState('')
+    const [openCreate, setOpenCreate] = useState(false)
+    const [editId, setEditId] = useState<string>()
 
     useEffect(() => {
         const getContractTypes = async () => {
@@ -65,6 +72,13 @@ export default function ContractTypeListView() {
             contractType.name
                 .toLowerCase()
                 .includes(searchText.toLowerCase())
+    )
+    const dataFiltered = [...filteredContractTypes].sort(
+        getComparator<ContractTypeModel>(table.order, table.orderBy as keyof ContractTypeModel)
+    )
+    const dataInPage = dataFiltered.slice(
+        table.page * table.rowsPerPage,
+        table.page * table.rowsPerPage + table.rowsPerPage
     )
 
     const handleDeleteRow = async (id: number) => {
@@ -100,8 +114,7 @@ export default function ContractTypeListView() {
                 ]}
                 action={
                     <Button
-                        component={RouterLink}
-                        href={paths.contractType.add}
+                        onClick={() => setOpenCreate(true)}
                         variant="contained"
                         startIcon={<AddIcon />}
                     >
@@ -122,19 +135,12 @@ export default function ContractTypeListView() {
             <Card>
                 <TableContainer>
                     <Table>
-                        <TableHead>
-                            <TableRow>
-                                {TABLE_HEAD.map((head) => (
-                                    <TableCell
-                                        key={head.id || 'actions'}
-                                        align={head.align}
-                                        sx={{ width: head.width }}
-                                    >
-                                        {head.label}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        </TableHead>
+                        <TableHeadCustom
+                            headLabel={TABLE_HEAD}
+                            order={table.order}
+                            orderBy={table.orderBy}
+                            onSort={table.onSort}
+                        />
 
                         <TableBody>
                             {loading && (
@@ -142,14 +148,12 @@ export default function ContractTypeListView() {
                             )}
 
                             {!loading &&
-                                filteredContractTypes.map((row) => (
+                                dataInPage.map((row) => (
                                     <ContractTypeTableRow
                                         key={row.id}
                                         row={row}
                                         onEditRow={() =>
-                                            router.push(
-                                                paths.contractType.edit(row.id)
-                                            )
+                                            setEditId(String(row.id))
                                         }
                                         onDeleteRow={() =>
                                             handleDeleteRow(row.id)
@@ -157,14 +161,43 @@ export default function ContractTypeListView() {
                                     />
                                 ))}
 
-                            {!loading &&
-                                filteredContractTypes.length === 0 && (
+                                {!loading && !dataFiltered.length && (
                                     <TableNoData colSpan={TABLE_HEAD.length} />
                                 )}
                         </TableBody>
                     </Table>
                 </TableContainer>
+                <TablePaginationCustom
+                    count={dataFiltered.length}
+                    page={table.page}
+                    rowsPerPage={table.rowsPerPage}
+                    onPageChange={table.onChangePage}
+                    onRowsPerPageChange={table.onChangeRowsPerPage}
+                />
             </Card>
+            <Dialog open={openCreate} onClose={() => setOpenCreate(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Agregar tipo de contrato</DialogTitle>
+                <ContractTypeNewEditForm
+                    onSuccess={() => {
+                        setOpenCreate(false)
+                        allContractTypes().then(setContractTypes)
+                    }}
+                    onCancel={() => setOpenCreate(false)}
+                />
+            </Dialog>
+            <Dialog open={Boolean(editId)} onClose={() => setEditId(undefined)} fullWidth maxWidth="sm">
+                <DialogTitle>Editar tipo de contrato</DialogTitle>
+                {editId && (
+                    <ContractTypeNewEditForm
+                        contractTypeId={editId}
+                        onSuccess={() => {
+                            setEditId(undefined)
+                            allContractTypes().then(setContractTypes)
+                        }}
+                        onCancel={() => setEditId(undefined)}
+                    />
+                )}
+            </Dialog>
         </Container>
     )
 }

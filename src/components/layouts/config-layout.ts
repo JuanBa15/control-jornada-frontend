@@ -4,5 +4,6 @@ export const HEADER = {
 }
 
 export const NAV = {
-  W_VERTICAL: 260
+  W_VERTICAL: 260,
+  W_MINI: 88
 }

@@ -1,3 +1,4 @@
+
 'use client'
 
 import AddIcon from '@mui/icons-material/Add'
@@ -18,13 +19,28 @@ import {
   TablePaginationCustom,
   useTable
 } from '@/components/table'
+
 import { getErrorMessage } from '@/helpers/API'
-import { RegisterModel } from '@/model'
+import type { RegisterModel } from '@/model'
+import type { EmployeeOption } from '@/model/employee.model'
+import { getEmployeeFullName } from '@/model/employee.model'
+
 import { RouterLink } from '@/routes/components'
 import { useRouter } from '@/routes/hooks'
 import { paths } from '@/routes/paths'
-import { allRegisters, deleteRegister } from '@/services/rest/register/registerService'
-import { getComparator, includesText, Order } from '@/utils/table-filter'
+
+import {
+  allRegisters,
+  deleteRegister
+} from '@/services/rest/register/registerService'
+
+import { getEmployees } from '@/services/rest/employee/employeeService'
+
+import {
+  getComparator,
+  includesText,
+  Order
+} from '@/utils/table-filter'
 
 import { TABLE_HEAD } from '../register'
 import RegisterTableRow from '../register-table-row'
@@ -36,52 +52,88 @@ export default function RegisterListView() {
   const { enqueueSnackbar } = useSnackbar()
 
   const [registerList, setRegisterList] = useState<RegisterModel[]>([])
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
+
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
 
+  // Obtener registros y empleados desde el backend
   useEffect(() => {
-    const getRegisters = async () => {
+    let cancelled = false
+
+    const loadData = async () => {
       try {
-        const response = await allRegisters()
-        setRegisterList(response)
+        setLoading(true)
+
+        const [registersResponse, employeesResponse] =
+          await Promise.all([
+            allRegisters(),
+            getEmployees()
+          ])
+
+        if (!cancelled) {
+          setRegisterList(registersResponse)
+          setEmployees(employeesResponse)
+        }
       } catch (error) {
-        enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
+        if (!cancelled) {
+          enqueueSnackbar(getErrorMessage(error), {
+            variant: 'error'
+          })
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
-    getRegisters()
+    void loadData()
+
+    return () => {
+      cancelled = true
+    }
   }, [enqueueSnackbar])
 
+  // Filtrar y ordenar registros
   const dataFiltered = applyFilter({
     registerList,
+    employees,
     searchText,
     order: table.order,
     orderBy: table.orderBy as keyof RegisterModel
   })
 
+  // Paginar resultados
   const dataInPage = dataFiltered.slice(
     table.page * table.rowsPerPage,
     table.page * table.rowsPerPage + table.rowsPerPage
   )
 
+  // Buscar registros
   const handleSearch = (value: string) => {
     table.onResetPage()
     setSearchText(value)
   }
 
+  // Eliminar registro
   const handleDeleteRow = async (id: number) => {
     try {
       await deleteRegister(id)
+
       enqueueSnackbar('Registro eliminado')
-      setRegisterList((prev) => prev.filter((register) => register.id !== id))
+
+      setRegisterList(prev =>
+        prev.filter(register => register.id !== id)
+      )
 
       if (dataInPage.length === 1 && table.page > 0) {
         table.onChangePage(null, table.page - 1)
       }
     } catch (error) {
-      enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
+      enqueueSnackbar(getErrorMessage(error), {
+        variant: 'error'
+      })
     }
   }
 
@@ -122,15 +174,22 @@ export default function RegisterListView() {
             />
 
             <TableBody>
-              {loading && <TableLoading colSpan={TABLE_HEAD.length} />}
+              {loading && (
+                <TableLoading colSpan={TABLE_HEAD.length} />
+              )}
 
               {!loading &&
-                dataInPage.map((row) => (
+                dataInPage.map(row => (
                   <RegisterTableRow
                     key={row.id}
                     row={row}
-                    onEditRow={() => router.push(paths.register.edit(row.id))}
-                    onDeleteRow={() => handleDeleteRow(row.id)}
+                    employees={employees}
+                    onEditRow={() =>
+                      router.push(paths.register.edit(row.id))
+                    }
+                    onDeleteRow={() =>
+                      handleDeleteRow(row.id)
+                    }
                   />
                 ))}
 
@@ -153,23 +212,39 @@ export default function RegisterListView() {
   )
 }
 
+// Filtrar por empleado, código, ID o fecha
 function applyFilter({
   registerList,
+  employees,
   searchText,
   order,
   orderBy
 }: {
   registerList: RegisterModel[]
+  employees: EmployeeOption[]
   searchText: string
   order: Order
   orderBy: keyof RegisterModel
 }) {
+  const employeeMap = new Map(
+    employees.map(employee => [
+      employee.id,
+      `${employee.code} ${getEmployeeFullName(employee)}`
+    ])
+  )
+
   return [...registerList]
-    .filter(
-      (register) =>
-        !searchText ||
+    .filter(register => {
+      if (!searchText) return true
+
+      const employeeName =
+        employeeMap.get(register.employeeId) ?? ''
+
+      return (
         includesText(String(register.employeeId), searchText) ||
+        includesText(employeeName, searchText) ||
         includesText(register.day, searchText)
-    )
+      )
+    })
     .sort(getComparator<RegisterModel>(order, orderBy))
 }

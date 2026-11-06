@@ -7,7 +7,7 @@ import Container from '@mui/material/Container'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableContainer from '@mui/material/TableContainer'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import CustomBreadcrumbs from '@/components/custom-breadcrumbs'
 import { useSnackbar } from '@/components/snackbar'
@@ -20,8 +20,6 @@ import {
 } from '@/components/table'
 import { getErrorMessage } from '@/helpers/API'
 import { JustificationTypeModel } from '@/model'
-import { RouterLink } from '@/routes/components'
-import { useRouter } from '@/routes/hooks'
 import { paths } from '@/routes/paths'
 import { allJustificationTypes, deleteJustificationType } from '@/services/rest'
 import { getComparator, includesText, Order } from '@/utils/table-filter'
@@ -29,9 +27,23 @@ import { getComparator, includesText, Order } from '@/utils/table-filter'
 import { TABLE_HEAD } from '../justificationType'
 import JustificationTypeTableRow from '../justification-type-table-row'
 import JustificationTypeTableToolbar from '../justification-type-table-toolbar'
+import Modal from '@mui/material/Modal'
+import { JustificationTypeCreateView, JustificationTypeEditView } from '.'
+import Box from '@mui/material/Box'
+
+type ModalActiveId = number | "no-id" | undefined
+
+const modalBoxStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 600,
+  boxShadow: 24,
+  borderRadius: 3
+};
 
 export default function JustifcationTypeListView() {
-  const router = useRouter()
   const table = useTable()
   const { enqueueSnackbar } = useSnackbar()
 
@@ -40,21 +52,25 @@ export default function JustifcationTypeListView() {
   >([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
+  const [modalActiveId, setModalActiveId] = useState<
+    ModalActiveId
+  >(undefined)
+
+  const getJustificationTypes = useCallback(async () => {
+    try {
+      const response = await allJustificationTypes()
+      setJustificationTypeList(response)
+    } catch (error) {
+      enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }, [enqueueSnackbar])
 
   useEffect(() => {
-    const getJustificationTypes = async () => {
-      try {
-        const response = await allJustificationTypes()
-        setJustificationTypeList(response)
-      } catch (error) {
-        enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-      } finally {
-        setLoading(false)
-      }
-    }
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- El setState es posterior al async [falso positivo de ESLint en este caso]
     getJustificationTypes()
-  }, [enqueueSnackbar])
+  }, [getJustificationTypes])
 
   const dataFiltered = applyFilter({
     justificationTypeList,
@@ -88,76 +104,109 @@ export default function JustifcationTypeListView() {
     }
   }
 
-  return (
-    <Container maxWidth="xl">
-      <CustomBreadcrumbs
-        heading="Lista de tipos de justificación"
-        links={[
-          {
-            name: 'Tipos de justificación',
-            href: paths.justificationType.root
-          },
-          { name: 'Lista' }
-        ]}
-        action={
-          <Button
-            component={RouterLink}
-            href={paths.justificationType.add}
-            variant="contained"
-            startIcon={<AddIcon />}
-          >
-            Agregar
-          </Button>
-        }
-        sx={{ mb: { xs: 3, md: 5 } }}
-      />
+  const handleAddClick = () => {
+    setModalActiveId('no-id')
+  }
 
-      <Card>
-        <JustificationTypeTableToolbar
-          text={searchText}
-          onChangeText={handleSearch}
+  const handleEditClick = (id: number) => {
+    setModalActiveId(id)
+  }
+
+  const handleModalClose = () => {
+    setModalActiveId(undefined)
+  }
+
+  const handleAddEditSuccess = () => {
+    setLoading(true)
+    getJustificationTypes() // se vuelve a actualizar los datos de la lista (equivalente a volver a la página como era antes)
+  }
+
+  return (
+    <>  
+      <Container maxWidth="xl">
+        <CustomBreadcrumbs
+          heading="Lista de tipos de justificación"
+          links={[
+            {
+              name: 'Tipos de justificación',
+              href: paths.justificationType.root
+            },
+            { name: 'Lista' }
+          ]}
+          action={
+            <Button
+              onClick={handleAddClick}
+              variant="contained"
+              startIcon={<AddIcon />}
+            >
+              Agregar
+            </Button>
+          }
+          sx={{ mb: { xs: 3, md: 5 } }}
         />
 
-        <TableContainer>
-          <Table sx={{ minWidth: 720 }}>
-            <TableHeadCustom
-              headLabel={TABLE_HEAD}
-              order={table.order}
-              orderBy={table.orderBy}
-              onSort={table.onSort}
-            />
+        <Card>
+          <JustificationTypeTableToolbar
+            text={searchText}
+            onChangeText={handleSearch}
+          />
 
-            <TableBody>
-              {loading && <TableLoading colSpan={TABLE_HEAD.length} />}
+          <TableContainer>
+            <Table sx={{ minWidth: 720 }}>
+              <TableHeadCustom
+                headLabel={TABLE_HEAD}
+                order={table.order}
+                orderBy={table.orderBy}
+                onSort={table.onSort}
+                />
 
-              {!loading &&
-                dataInPage.map((row) => (
-                  <JustificationTypeTableRow
+              <TableBody>
+                {loading && <TableLoading colSpan={TABLE_HEAD.length} />}
+
+                {!loading &&
+                  dataInPage.map((row) => (
+                    <JustificationTypeTableRow
                     key={row.id}
                     row={row}
-                    onEditRow={() =>
-                      router.push(paths.justificationType.edit(row.id))
-                    }
+                    onEditRow={() => handleEditClick(row.id)}
                     onDeleteRow={() => handleDeleteRow(row.id)}
-                  />
-                ))}
+                    />
+                  ))}
 
-              {!loading && !dataFiltered.length && (
-                <TableNoData colSpan={TABLE_HEAD.length} />
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                {!loading && !dataFiltered.length && (
+                  <TableNoData colSpan={TABLE_HEAD.length} />
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        <TablePaginationCustom
-          count={dataFiltered.length}
-          page={table.page}
-          rowsPerPage={table.rowsPerPage}
-          onPageChange={table.onChangePage}
-          onRowsPerPageChange={table.onChangeRowsPerPage}
-        />
-      </Card>
-    </Container>
+          <TablePaginationCustom
+            count={dataFiltered.length}
+            page={table.page}
+            rowsPerPage={table.rowsPerPage}
+            onPageChange={table.onChangePage}
+            onRowsPerPageChange={table.onChangeRowsPerPage}
+          />
+        </Card>
+      </Container>
+
+      <Modal
+        open={!!modalActiveId}
+        onClose={handleModalClose}
+      >
+        <Box sx={modalBoxStyle}>
+          {
+            modalActiveId && (
+              modalActiveId == 'no-id' ? (
+                <JustificationTypeCreateView onClose={handleModalClose} onSuccess={handleAddEditSuccess}/>
+              ) : (
+                <JustificationTypeEditView id={modalActiveId.toString()} onClose={handleModalClose} onSuccess={handleAddEditSuccess}/>
+              )
+            )
+          }
+        </Box>
+      </Modal>
+    </>
   )
 }
 

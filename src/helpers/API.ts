@@ -54,6 +54,25 @@ export const handleResponse = async <T>(response: Response): Promise<T> => {
   return body as T
 }
 
+export const request = async <T>(
+  input: RequestInfo,
+  init?: RequestInit
+): Promise<T> => {
+  try {
+    const response = await fetch(input, init)
+
+    return handleResponse<T>(response)
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new TypeError('No se pudo conectar con el servidor', {
+        cause: error
+      })
+    }
+
+    throw error
+  }
+}
+
 export const getErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
     // Cuando el backend entrega un conflicto, su mensaje es la fuente de verdad.

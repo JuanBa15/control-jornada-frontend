@@ -1,8 +1,9 @@
-import { JustificationTypeEditView } from '@/sections/justification-type/view'
+import { MaritalStatusEditView } from '@/sections/maritalStatus/view'
 
 export const metadata = {
-  title: 'Editar tipo de justificacion'
+  title: 'Editar estado civil'
 }
+
 interface Props {
   params: Promise<{ id: string }>
 }
@@ -10,5 +11,5 @@ interface Props {
 export default async function Page({ params }: Props) {
   const { id } = await params
 
-  return <JustificationTypeEditView id={id} />
+  return <MaritalStatusEditView id={id} />
 }

@@ -1,3 +1,6 @@
+
+import type { JustificationModel } from './justification.model'
+
 export interface RegisterModel {
   id: number
   employeeId: number
@@ -8,8 +11,15 @@ export interface RegisterModel {
   backToWork: string | null
   day: string
   justificationId: number | null
+
+  // Objeto completo devuelto por el backend
+  justification: JustificationModel | null
+
   active?: boolean
   inUse?: boolean
 }
 
-export type RegisterRequest = Omit<RegisterModel, 'id'>
+export type RegisterRequest = Omit<
+  RegisterModel,
+  'id' | 'justification'
+>

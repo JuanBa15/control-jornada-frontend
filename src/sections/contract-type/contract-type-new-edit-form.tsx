@@ -18,8 +18,8 @@ import { useRouter } from '@/routes/hooks'
 import { paths } from '@/routes/paths'
 import {
     contractTypeById,
-  nextContractTypeId,
-    saveContractType
+    createContractType,
+    updateContractType
 } from '@/services/rest'
 
 import {
@@ -30,10 +30,14 @@ import {
 
 interface Props {
     contractTypeId?: string
+    onSuccess?: () => void
+    onCancel?: () => void
 }
 
 export default function ContractTypeNewEditForm({
-    contractTypeId
+    contractTypeId,
+    onSuccess,
+    onCancel
 }: Props) {
     const router = useRouter()
     const { enqueueSnackbar } = useSnackbar()
@@ -87,25 +91,17 @@ export default function ContractTypeNewEditForm({
     const onSubmit = handleSubmit(async (data) => {
         try {
             if (contractTypeId) {
-                await saveContractType({
-                    // Convertimos el id a number porque el backend espera un number
-                    id: Number(contractTypeId),
-                    ...data
-                })
+                await updateContractType(contractTypeId, data)
 
                 enqueueSnackbar('Tipo de contrato actualizado')
             } else {
-                const id = await nextContractTypeId()
-
-                await saveContractType({
-                    id,
-                    ...data
-                })
+                await createContractType(data)
 
                 enqueueSnackbar('Tipo de contrato creado')
             }
 
-            router.push(paths.contractType.list)
+            if (onSuccess) onSuccess()
+            else router.push(paths.contractType.list)
         } catch (error) {
             enqueueSnackbar(getErrorMessage(error), {
                 variant: 'error'
@@ -139,14 +135,24 @@ export default function ContractTypeNewEditForm({
                         spacing={2}
                         justifyContent="flex-end"
                     >
-                        <Button
-                            component={RouterLink}
-                            href={paths.contractType.list}
-                            variant="outlined"
-                            color="inherit"
-                        >
-                            Cancelar
-                        </Button>
+                        {onCancel ? (
+                            <Button
+                                onClick={onCancel}
+                                variant="outlined"
+                                color="inherit"
+                            >
+                                Cancelar
+                            </Button>
+                        ) : (
+                            <Button
+                                component={RouterLink}
+                                href={paths.contractType.list}
+                                variant="outlined"
+                                color="inherit"
+                            >
+                                Cancelar
+                            </Button>
+                        )}
 
                         <Button
                             type="submit"

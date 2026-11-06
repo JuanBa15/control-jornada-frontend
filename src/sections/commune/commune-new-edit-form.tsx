@@ -9,9 +9,6 @@ import { Controller, useForm } from 'react-hook-form'
 import FormProvider, { RHFTextField } from '@/components/hook-form'
 import { useSnackbar } from '@/components/snackbar'
 import { getErrorMessage } from '@/helpers/API'
-import { RouterLink } from '@/routes/components'
-import { useRouter } from '@/routes/hooks'
-import { paths } from '@/routes/paths'
 import {
   createCommune,
   communeById,
@@ -27,13 +24,15 @@ import {
 import { CityModel, CommuneRequestCreate, CommuneRequestUpdate } from '@/model'
 import Autocomplete from '@mui/material/Autocomplete'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 
 interface Props {
   communeId?: string
+  onSuccess: () => void
+  onClose: () => void
 }
 
-export default function CommuneNewEditForm({ communeId }: Props) {
-  const router = useRouter()
+export default function CommuneNewEditForm({ communeId, onSuccess, onClose }: Props) {
   const { enqueueSnackbar } = useSnackbar()
 
   const [cities, setCities] = useState<CityModel[]>([]);
@@ -66,14 +65,13 @@ export default function CommuneNewEditForm({ communeId }: Props) {
         })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        router.push(paths.commune.list)
       } finally {
         setLoading(false)
       }
     }
 
     getCommune()
-  }, [communeId, reset, enqueueSnackbar, router])
+  }, [communeId, reset, enqueueSnackbar])
 
   useEffect(() => {
     const getCities = async () => {
@@ -82,20 +80,21 @@ export default function CommuneNewEditForm({ communeId }: Props) {
         setCities(citiesData)
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        router.push(paths.commune.list)
       } finally {
         setCitiesLoading(false)
       }
     }
 
     getCities()
-  })
+  }, [enqueueSnackbar])
 
   const onSubmit = handleSubmit(async (data) => {
     try {
       if (communeId) {
         const communeToUpdate: CommuneRequestUpdate = {
           ...data,
+          siiCode: data.siiCode || undefined,
+          tgrCode: data.tgrCode || undefined,
           id: parseInt(communeId)
         }
         await updateCommune(communeToUpdate)
@@ -109,7 +108,9 @@ export default function CommuneNewEditForm({ communeId }: Props) {
         await createCommune(communeToCreate)
         enqueueSnackbar('Comuna creada')
       }
-      router.push(paths.commune.list)
+
+      onSuccess()
+      onClose()
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -126,6 +127,10 @@ export default function CommuneNewEditForm({ communeId }: Props) {
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
       <Card sx={{ p: 3 }}>
+        <Typography variant='h5' fontWeight={600} sx={{ pb: 3 }}>
+          { communeId ? "Editar comuna" : "Agregar comuna" }
+        </Typography>
+
         <Stack spacing={3}>
           <RHFTextField name="name" label="Nombre" required />
           <RHFTextField name="siiCode" label="Código SII" />
@@ -158,10 +163,9 @@ export default function CommuneNewEditForm({ communeId }: Props) {
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button
-              component={RouterLink}
-              href={paths.commune.list}
               variant="outlined"
               color="inherit"
+              onClick={onClose}
             >
               Cancelar
             </Button>
