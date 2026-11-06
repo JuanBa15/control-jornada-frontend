@@ -18,9 +18,7 @@ describe('contractTypeService', () => {
   })
 
   it('allContractTypes devuelve la lista de tipos de contrato', async () => {
-    const contractTypes = [
-      { id: 1, name: 'Indefinido' }
-    ]
+    const contractTypes = [{ id: 1, name: 'Indefinido' }]
 
     mockFetch.mockResolvedValue(jsonResponse(contractTypes))
 
@@ -55,9 +53,7 @@ describe('contractTypeService', () => {
       name: 'Plazo fijo'
     }
 
-    mockFetch.mockResolvedValue(
-      jsonResponse({ id: 2, ...request }, 200)
-    )
+    mockFetch.mockResolvedValue(jsonResponse({ id: 2, ...request }, 200))
 
     await createContractType(request)
 
@@ -75,9 +71,7 @@ describe('contractTypeService', () => {
       name: 'Contrato actualizado'
     }
 
-    mockFetch.mockResolvedValue(
-      jsonResponse({ id: 1, ...request })
-    )
+    mockFetch.mockResolvedValue(jsonResponse({ id: 1, ...request }))
 
     await updateContractType(1, request)
 
