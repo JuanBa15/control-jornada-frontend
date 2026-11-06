@@ -13,9 +13,6 @@ import { useSnackbar } from '@/components/snackbar'
 import { getErrorMessage } from '@/helpers/API'
 import { CityRequest } from '@/model'
 import { RegionModel } from '@/model/region.model'
-import { RouterLink } from '@/routes/components'
-import { useRouter } from '@/routes/hooks'
-import { paths } from '@/routes/paths'
 import { cityById, saveCity, updateCity } from '@/services/rest'
 import { allRegions } from '@/services/rest/indexRegion'
 
@@ -23,9 +20,9 @@ import { CITY_DEFAULT_VALUES, CityFormValues, CitySchema } from './city'
 
 interface Props {
   cityId?: string
-  // si vienen, el formulario está dentro de un modal
-  onSuccess?: VoidFunction
-  onCancel?: VoidFunction
+  // el formulario vive dentro de un modal de la lista
+  onSuccess: VoidFunction
+  onCancel: VoidFunction
 }
 
 export default function CityNewEditForm({
@@ -33,7 +30,6 @@ export default function CityNewEditForm({
   onSuccess,
   onCancel
 }: Props) {
-  const router = useRouter()
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(!!cityId)
   const [regions, setRegions] = useState<RegionModel[]>([])
@@ -74,15 +70,14 @@ export default function CityNewEditForm({
         reset({ name: city.name, regionId: city.region.id })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        if (onCancel) onCancel()
-        else router.push(paths.city.list)
+        onCancel()
       } finally {
         setLoading(false)
       }
     }
 
     getCity()
-  }, [cityId, reset, enqueueSnackbar, router, onCancel])
+  }, [cityId, reset, enqueueSnackbar, onCancel])
 
   const onSubmit = handleSubmit(async (data) => {
     // el back espera la región como objeto
@@ -99,8 +94,7 @@ export default function CityNewEditForm({
         await saveCity(city)
         enqueueSnackbar('Ciudad creada')
       }
-      if (onSuccess) onSuccess()
-      else router.push(paths.city.list)
+      onSuccess()
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -148,20 +142,9 @@ export default function CityNewEditForm({
           />
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            {onCancel ? (
-              <Button variant="outlined" color="inherit" onClick={onCancel}>
-                Cancelar
-              </Button>
-            ) : (
-              <Button
-                component={RouterLink}
-                href={paths.city.list}
-                variant="outlined"
-                color="inherit"
-              >
-                Cancelar
-              </Button>
-            )}
+            <Button variant="outlined" color="inherit" onClick={onCancel}>
+              Cancelar
+            </Button>
             <Button type="submit" variant="contained" loading={isSubmitting}>
               {cityId ? 'Guardar cambios' : 'Crear ciudad'}
             </Button>

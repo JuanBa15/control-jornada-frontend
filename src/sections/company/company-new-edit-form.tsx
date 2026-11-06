@@ -12,9 +12,6 @@ import FormProvider, { RHFSwitch, RHFTextField } from '@/components/hook-form'
 import { useSnackbar } from '@/components/snackbar'
 import { getErrorMessage } from '@/helpers/API'
 import { CommuneModel, CompanyRequest } from '@/model'
-import { RouterLink } from '@/routes/components'
-import { useRouter } from '@/routes/hooks'
-import { paths } from '@/routes/paths'
 import {
   allCommunes,
   companyById,
@@ -30,9 +27,9 @@ import {
 
 interface Props {
   companyId?: string
-  // si vienen, el formulario está dentro de un modal
-  onSuccess?: VoidFunction
-  onCancel?: VoidFunction
+  // el formulario vive dentro de un modal de la lista
+  onSuccess: VoidFunction
+  onCancel: VoidFunction
 }
 
 export default function CompanyNewEditForm({
@@ -40,7 +37,6 @@ export default function CompanyNewEditForm({
   onSuccess,
   onCancel
 }: Props) {
-  const router = useRouter()
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(!!companyId)
   const [communes, setCommunes] = useState<CommuneModel[]>([])
@@ -93,20 +89,27 @@ export default function CompanyNewEditForm({
         })
       } catch (error) {
         enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
-        if (onCancel) onCancel()
-        else router.push(paths.company.list)
+        onCancel()
       } finally {
         setLoading(false)
       }
     }
 
     getCompany()
-  }, [companyId, reset, enqueueSnackbar, router, onCancel])
+  }, [companyId, reset, enqueueSnackbar, onCancel])
 
   const onSubmit = handleSubmit(async (data) => {
     // el back espera la comuna como objeto
-    const { communeId, ...rest } = data
-    const company: CompanyRequest = { ...rest, commune: { id: communeId } }
+    const { communeId, phone, alias, giro, email, ...rest } = data
+    const company: CompanyRequest = {
+      ...rest,
+      // los opcionales vacíos se envían como null
+      phone: phone.trim() || null,
+      alias: alias.trim() || null,
+      giro: giro.trim() || null,
+      email: email.trim() || null,
+      commune: { id: communeId }
+    }
 
     try {
       if (companyId) {
@@ -116,8 +119,7 @@ export default function CompanyNewEditForm({
         await saveCompany(company)
         enqueueSnackbar('Empresa creada')
       }
-      if (onSuccess) onSuccess()
-      else router.push(paths.company.list)
+      onSuccess()
     } catch (error) {
       enqueueSnackbar(getErrorMessage(error), { variant: 'error' })
     }
@@ -177,20 +179,9 @@ export default function CompanyNewEditForm({
           </Stack>
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            {onCancel ? (
-              <Button variant="outlined" color="inherit" onClick={onCancel}>
-                Cancelar
-              </Button>
-            ) : (
-              <Button
-                component={RouterLink}
-                href={paths.company.list}
-                variant="outlined"
-                color="inherit"
-              >
-                Cancelar
-              </Button>
-            )}
+            <Button variant="outlined" color="inherit" onClick={onCancel}>
+              Cancelar
+            </Button>
             <Button type="submit" variant="contained" loading={isSubmitting}>
               {companyId ? 'Guardar cambios' : 'Crear empresa'}
             </Button>
